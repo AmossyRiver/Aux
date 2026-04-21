@@ -138,33 +138,50 @@ export function initializeCronJobs() {
                         }
                     }
 
-                    // Refresh recently played - add new entries every time
+                    // Refresh recently played - add new entries only if unique
                     const recentlyPlayed = await client.me.recentlyPlayed({ limit: 50 });
 
                     if (recentlyPlayed.items) {
+                        let newTracksCount = 0;
                         for (const item of recentlyPlayed.items) {
                             const track = item.track;
+                            // Normalize the timestamp to remove milliseconds for consistent comparison
+                            const playedAt = new Date(item.played_at);
+                            playedAt.setMilliseconds(0);
 
-                            // Always create a new entry - never update
-                            // This way we capture every single play
-                            await prisma.listeningHistory.create({
-                                data: {
-                                    userId: user.id,
-                                    spotifyTrackId: track.id,
-                                    trackName: track.name,
-                                    artistNames: track.artists.map((a: any) => a.name).join(', '),
-                                    albumImageUrl: track.album.images?.[0]?.url,
-                                    playedAt: new Date(item.played_at)
+                            try {
+                                // Check if this exact play already exists
+                                const existing = await prisma.listeningHistory.findFirst({
+                                    where: {
+                                        userId: user.id,
+                                        spotifyTrackId: track.id,
+                                        playedAt: playedAt
+                                    }
+                                });
+
+                                // Only create if it doesn't already exist
+                                if (!existing) {
+                                    await prisma.listeningHistory.create({
+                                        data: {
+                                            userId: user.id,
+                                            spotifyTrackId: track.id,
+                                            trackName: track.name,
+                                            artistNames: track.artists.map((a: any) => a.name).join(', '),
+                                            albumImageUrl: track.album.images?.[0]?.url,
+                                            playedAt: playedAt
+                                        }
+                                    });
+                                    newTracksCount++;
                                 }
-                            }).catch((error) => {
-                                // Silently ignore duplicate play entries that occur in the same refresh
-                                if (error.code !== 'P2002') {
-                                    throw error;
+                            } catch (err: any) {
+                                // Skip if there's any error
+                                if (err.code !== 'P2002') {
+                                    console.error(`[CRON] Error saving track for user ${user.id}:`, err);
                                 }
-                            });
+                            }
                         }
 
-                        console.log(`[CRON] Updated listening history for user ${user.spotifyId}`);
+                        console.log(`[CRON] Updated listening history for user ${user.spotifyId} - Added ${newTracksCount} new tracks`);
                     }
                 } catch (userError) {
                     console.error(`[CRON] Error updating user ${user.spotifyId}:`, userError);

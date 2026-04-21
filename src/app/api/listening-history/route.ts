@@ -28,9 +28,17 @@ export async function GET() {
       take: 1000 // Get up to 1000 tracks
     });
 
-    // Map each entry - each entry in the database represents one listen
-    const items = listeningHistory.map((entry, index) => ({
-      id: `${entry.spotifyTrackId}-${index}`, // Unique key for each listen
+    // Deduplicate tracks by spotifyTrackId, keeping the most recent play
+    const trackMap = new Map<string, typeof listeningHistory[0]>();
+    for (const entry of listeningHistory) {
+      if (!trackMap.has(entry.spotifyTrackId)) {
+        trackMap.set(entry.spotifyTrackId, entry);
+      }
+    }
+
+    // Map each unique track
+    const items = Array.from(trackMap.values()).map((entry) => ({
+      id: entry.spotifyTrackId,
       name: entry.trackName,
       artists: entry.artistNames.split(', ').map(name => ({ name })),
       album: { images: entry.albumImageUrl ? [{ url: entry.albumImageUrl }] : [] },

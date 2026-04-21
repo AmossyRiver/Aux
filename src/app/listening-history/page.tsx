@@ -33,23 +33,28 @@ export default function ListeningHistoryPage() {
     };
   }, []);
 
-  async function fetchListeningHistory() {
-    try {
-      setLoading(true);
-      // Fetch directly from the database endpoint
-      const res = await fetch('/api/listening-history');
-      if (res.ok) {
-        const data = await res.json();
-        setListeningHistory(data.items || []);
-      } else {
-        console.error('Failed to fetch listening history:', res.status);
-      }
-    } catch (error) {
-      console.error('Error fetching listening history:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+   async function fetchListeningHistory() {
+     try {
+       setLoading(true);
+       // Fetch directly from the database endpoint
+       const res = await fetch('/api/listening-history');
+       if (res.ok) {
+         const data = await res.json();
+         // Deduplicate on frontend to ensure no duplicates are shown
+         const items = data.items || [];
+         const deduped = Array.from(
+           new Map(items.map((item: ListeningHistoryTrack) => [item.id, item])).values()
+         );
+         setListeningHistory(deduped);
+       } else {
+         console.error('Failed to fetch listening history:', res.status);
+       }
+     } catch (error) {
+       console.error('Error fetching listening history:', error);
+     } finally {
+       setLoading(false);
+     }
+   }
 
   async function playPreview(track: Track) {
     if (playingTrackId === track.id) {

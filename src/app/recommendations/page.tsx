@@ -79,22 +79,30 @@ export default function RecommendationsPage() {
                 window.location.href = '/api/login';
                 return;
             }
-            if (tracksRes.ok) {
-                const tracksData = await tracksRes.json();
-                console.log('[PAGE] Tracks response:', tracksData);
-                setTrackRecommendations(tracksData.items || []);
-            }
+             if (tracksRes.ok) {
+                 const tracksData = await tracksRes.json();
+                 console.log('[PAGE] Tracks response:', tracksData);
+                 // Deduplicate tracks by ID
+                 const deduplicatedTracks = Array.from(
+                     new Map((tracksData.items || []).map((track: Track) => [track.id, track])).values()
+                 );
+                 setTrackRecommendations(deduplicatedTracks);
+             }
 
-            const artistsRes = await fetch(`/api/recommendations?type=artists${tracksQuery}${artistsQuery}`);
-            if (artistsRes.status === 401) {
-                window.location.href = '/api/login';
-                return;
-            }
-            if (artistsRes.ok) {
-                const artistsData = await artistsRes.json();
-                console.log('[PAGE] Artists response:', artistsData);
-                setArtistRecommendations(artistsData.items || []);
-            }
+             const artistsRes = await fetch(`/api/recommendations?type=artists${tracksQuery}${artistsQuery}`);
+             if (artistsRes.status === 401) {
+                 window.location.href = '/api/login';
+                 return;
+             }
+             if (artistsRes.ok) {
+                 const artistsData = await artistsRes.json();
+                 console.log('[PAGE] Artists response:', artistsData);
+                 // Deduplicate artists by ID
+                 const deduplicatedArtists = Array.from(
+                     new Map((artistsData.items || []).map((artist: Artist) => [artist.id, artist])).values()
+                 );
+                 setArtistRecommendations(deduplicatedArtists);
+             }
 
             setError(null);
         } catch (err) {

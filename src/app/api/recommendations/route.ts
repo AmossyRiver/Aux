@@ -123,39 +123,39 @@ export async function GET(request: NextRequest) {
             console.log(`[RECOMMENDATIONS] Returning ${recommendedArtists.length} recommended artists`);
 
             // Enrich artist data with Spotify information
-             const enrichedArtists = await Promise.all(
-                 recommendedArtists.map(async (artist: any) => {
-                     try {
-                         // Search for artist on Spotify
-                         const searchUrl = new URL('https://api.spotify.com/v1/search');
-                         searchUrl.searchParams.append('q', artist.name);
-                         searchUrl.searchParams.append('type', 'artist');
-                         searchUrl.searchParams.append('limit', '1');
+            const enrichedArtists = await Promise.all(
+                recommendedArtists.map(async (artist: any) => {
+                    try {
+                        // Search for artist on Spotify
+                        const searchUrl = new URL('https://api.spotify.com/v1/search');
+                        searchUrl.searchParams.append('q', artist.name);
+                        searchUrl.searchParams.append('type', 'artist');
+                        searchUrl.searchParams.append('limit', '1');
 
-                         const searchRes = await fetch(searchUrl.toString(), {
-                             headers: { 'Authorization': `Bearer ${accessToken}` }
-                         });
+                        const searchRes = await fetch(searchUrl.toString(), {
+                            headers: { 'Authorization': `Bearer ${accessToken}` }
+                        });
 
-                         if (searchRes.ok) {
-                             const searchData = await searchRes.json();
-                             if (searchData.artists?.items?.[0]) {
-                                 const spotifyArtist = searchData.artists.items[0];
-                                 return {
-                                     id: spotifyArtist.id,
-                                     name: spotifyArtist.name,
-                                     images: spotifyArtist.images || [],
-                                     genres: spotifyArtist.genres || [],
-                                     external_urls: spotifyArtist.external_urls || {},
-                                     popularity: spotifyArtist.popularity || 0
-                                 };
-                             }
-                         }
-                     } catch (error) {
-                         console.log(`[RECOMMENDATIONS] Error enriching artist ${artist.name}`);
-                     }
-                     return artist;
-                 })
-             );
+                        if (searchRes.ok) {
+                            const searchData = await searchRes.json();
+                            if (searchData.artists?.items?.[0]) {
+                                const spotifyArtist = searchData.artists.items[0];
+                                return {
+                                    id: spotifyArtist.id,
+                                    name: spotifyArtist.name,
+                                    images: spotifyArtist.images || [],
+                                    genres: spotifyArtist.genres || [],
+                                    external_urls: spotifyArtist.external_urls || {},
+                                    popularity: spotifyArtist.popularity || 0
+                                };
+                            }
+                        }
+                    } catch (error) {
+                        console.log(`[RECOMMENDATIONS] Error enriching artist ${artist.name}`);
+                    }
+                    return artist;
+                })
+            );
 
              // Deduplicate artists by ID
              const deduplicatedArtists = Array.from(
@@ -297,60 +297,60 @@ export async function GET(request: NextRequest) {
                 })
             );
 
-             console.log(`[RECOMMENDATIONS] Returning ${enrichedTracks.length} tracks. Preview URLs available:`, enrichedTracks.filter(t => t.preview_url).length);
+            console.log(`[RECOMMENDATIONS] Returning ${enrichedTracks.length} tracks. Preview URLs available:`, enrichedTracks.filter(t => t.preview_url).length);
 
-             // Deduplicate tracks by ID before fetching enhanced previews
-             const deduplicatedTracks = Array.from(
-                 new Map(enrichedTracks.map(track => [track.id, track])).values()
-             );
+            // Deduplicate tracks by ID before fetching enhanced previews
+            const deduplicatedTracks = Array.from(
+                new Map(enrichedTracks.map(track => [track.id, track])).values()
+            );
 
-             console.log(`[RECOMMENDATIONS] After deduplication: ${deduplicatedTracks.length} tracks (was ${enrichedTracks.length})`);
+            console.log(`[RECOMMENDATIONS] After deduplication: ${deduplicatedTracks.length} tracks (was ${enrichedTracks.length})`);
 
-             // Fetch enhanced previews for tracks that don't have a preview URL
-             const tracksWithEnhancedPreviews = await Promise.all(
-                 deduplicatedTracks.map(async (track: any) => {
-                     if (track.preview_url) {
-                         return track;
-                     }
+            // Fetch enhanced previews for tracks that don't have a preview URL
+            const tracksWithEnhancedPreviews = await Promise.all(
+                deduplicatedTracks.map(async (track: any) => {
+                    if (track.preview_url) {
+                        return track;
+                    }
 
-                     try {
-                         const artistName = track.artists?.[0]?.name || 'Unknown';
-                         const params = new URLSearchParams();
-                         params.append('songName', track.name);
-                         params.append('artistName', artistName);
-                         params.append('trackId', track.id);
+                    try {
+                        const artistName = track.artists?.[0]?.name || 'Unknown';
+                        const params = new URLSearchParams();
+                        params.append('songName', track.name);
+                        params.append('artistName', artistName);
+                        params.append('trackId', track.id);
 
-                         const baseUrl = process.env.VERCEL_URL 
-                             ? `https://${process.env.VERCEL_URL}`
-                             : 'http://localhost:3000';
+                        const baseUrl = process.env.VERCEL_URL
+                            ? `https://${process.env.VERCEL_URL}`
+                            : 'http://localhost:3000';
 
-                         const previewResponse = await fetch(
-                             `${baseUrl}/api/enhanced-preview?${params.toString()}`,
-                             { method: 'GET' }
-                         );
+                        const previewResponse = await fetch(
+                            `${baseUrl}/api/enhanced-preview?${params.toString()}`,
+                            { method: 'GET' }
+                        );
 
-                         if (previewResponse.ok) {
-                             const previewData = await previewResponse.json();
-                             if (previewData.previewUrl) {
-                                 console.log(`[RECOMMENDATIONS] Found enhanced preview for ${track.name}`);
-                                 return {
-                                     ...track,
-                                     preview_url: previewData.previewUrl
-                                 };
-                             }
-                         }
-                     } catch (error) {
-                         console.error(`[RECOMMENDATIONS] Failed to fetch enhanced preview for track ${track.id}:`, error);
-                     }
+                        if (previewResponse.ok) {
+                            const previewData = await previewResponse.json();
+                            if (previewData.previewUrl) {
+                                console.log(`[RECOMMENDATIONS] Found enhanced preview for ${track.name}`);
+                                return {
+                                    ...track,
+                                    preview_url: previewData.previewUrl
+                                };
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`[RECOMMENDATIONS] Failed to fetch enhanced preview for track ${track.id}:`, error);
+                    }
 
-                     return track;
-                 })
-             );
+                    return track;
+                })
+            );
 
-             return NextResponse.json({
-                 type: 'tracks',
-                 items: tracksWithEnhancedPreviews
-             });
+            return NextResponse.json({
+                type: 'tracks',
+                items: tracksWithEnhancedPreviews
+            });
         }
     } catch (error) {
         console.error('[RECOMMENDATIONS] Error fetching recommendations:', error);

@@ -18,9 +18,10 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  topTracks        UserTopTrack[]
-  topArtists       UserTopArtist[]
-  listeningHistory ListeningHistory[]
+  topTracks            UserTopTrack[]
+  topArtists           UserTopArtist[]
+  listeningHistory     ListeningHistory[]
+  savedRecommendations SavedRecommendation[]
 }
 
 model UserTopTrack {
@@ -73,3 +74,24 @@ model ListeningHistory {
   @@index([userId, spotifyTrackId])
 }
 
+model SavedRecommendation {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  spotifyId     String // Can be track ID or artist ID
+  name          String
+  type          String // 'track' or 'artist'
+  artistNames   String? // For tracks
+  albumImageUrl String?
+  genres        String[] // For artists
+  previewUrl    String? // For tracks
+  popularity    Int?
+  savedAt       DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, spotifyId, type])
+  @@index([userId])
+  @@index([userId, type])
+}

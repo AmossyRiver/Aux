@@ -39,7 +39,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ userId: s
   const [topTracks, setTopTracks] = useState<Track[]>([]);
   const [topArtists, setTopArtists] = useState<Artist[]>([]);
   const [listeningHistory, setListeningHistory] = useState<ListeningHistoryTrack[]>([]);
-  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
+  const [nowPlaying, setNowPlaying] = useState<{ isPlaying: boolean; item?: Track } | null>(null);
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('medium_term');
   const [loading, setLoading] = useState(true);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);

@@ -2,6 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import {
+  IoMusicalNotes,
+  IoBookmark,
+  IoBookmarkOutline,
+  IoPlayCircle,
+  IoPauseCircle,
+  IoCheckmarkCircle,
+  IoSettingsOutline,
+  IoChevronBack
+} from 'react-icons/io5';
 
 interface Track {
     id: string;
@@ -31,6 +41,9 @@ export default function RecommendationsPage() {
     const [error, setError] = useState<string | null>(null);
     const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
     const [showSeedSelector, setShowSeedSelector] = useState(false);
+    const [savedTrackIds, setSavedTrackIds] = useState<Set<string>>(new Set());
+    const [savedArtistIds, setSavedArtistIds] = useState<Set<string>>(new Set());
+    const [savingId, setSavingId] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
@@ -65,6 +78,102 @@ export default function RecommendationsPage() {
         fetchInitialData();
     }, [selectedTimeRange]);
 
+    // Fetch saved recommendations on component mount
+    useEffect(() => {
+        const fetchSavedRecommendations = async () => {
+            try {
+                const res = await fetch('/api/saved-recommendations');
+                if (res.ok) {
+                    const data = await res.json();
+                    const items = data.items || [];
+                    const savedTracks = new Set(items.filter((item: any) => item.type === 'track').map((item: any) => item.spotifyId)) as Set<string>;
+                    const savedArtists = new Set(items.filter((item: any) => item.type === 'artist').map((item: any) => item.spotifyId)) as Set<string>;
+                    setSavedTrackIds(savedTracks);
+                    setSavedArtistIds(savedArtists);
+                }
+            } catch (err) {
+                console.error('Error fetching saved recommendations:', err);
+            }
+        };
+        fetchSavedRecommendations();
+    }, []);
+
+    const saveRecommendation = async (item: Track | Artist, type: 'track' | 'artist') => {
+        setSavingId(item.id);
+        try {
+            const payload = type === 'track'
+                ? {
+                    spotifyId: item.id,
+                    name: (item as Track).name,
+                    type: 'track',
+                    artistNames: (item as Track).artists.map(a => a.name).join(', '),
+                    albumImageUrl: (item as Track).album?.images?.[0]?.url,
+                    previewUrl: (item as Track).preview_url,
+                    popularity: (item as any).popularity
+                }
+                : {
+                    spotifyId: item.id,
+                    name: (item as Artist).name,
+                    type: 'artist',
+                    genres: (item as Artist).genres || [],
+                    albumImageUrl: (item as Artist).images?.[0]?.url,
+                    popularity: (item as any).popularity
+                };
+
+            const res = await fetch('/api/saved-recommendations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                if (type === 'track') {
+                    setSavedTrackIds(prev => new Set(prev).add(item.id));
+                } else {
+                    setSavedArtistIds(prev => new Set(prev).add(item.id));
+                }
+            } else {
+                console.error('Error saving recommendation:', data);
+            }
+        } catch (err) {
+            console.error('Error saving recommendation:', err);
+        } finally {
+            setSavingId(null);
+        }
+    };
+
+    const deleteRecommendation = async (itemId: string, type: 'track' | 'artist') => {
+        setSavingId(itemId);
+        try {
+            const res = await fetch('/api/saved-recommendations', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ spotifyId: itemId, type })
+            });
+
+            if (res.ok) {
+                if (type === 'track') {
+                    setSavedTrackIds(prev => {
+                        const updated = new Set(prev);
+                        updated.delete(itemId);
+                        return updated;
+                    });
+                } else {
+                    setSavedArtistIds(prev => {
+                        const updated = new Set(prev);
+                        updated.delete(itemId);
+                        return updated;
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Error deleting recommendation:', err);
+        } finally {
+            setSavingId(null);
+        }
+    };
+
     const fetchRecommendations = async (selectedTrackIds?: string[], selectedArtistIds?: string[]) => {
         try {
             const tracksQuery = selectedTrackIds && selectedTrackIds.length > 0 
@@ -82,11 +191,11 @@ export default function RecommendationsPage() {
              if (tracksRes.ok) {
                  const tracksData = await tracksRes.json();
                  console.log('[PAGE] Tracks response:', tracksData);
-                 // Deduplicate tracks by ID
-                 const deduplicatedTracks = Array.from(
-                     new Map((tracksData.items || []).map((track: Track) => [track.id, track])).values()
-                 );
-                 setTrackRecommendations(deduplicatedTracks);
+                  // Deduplicate tracks by ID
+                  const deduplicatedTracks = Array.from(
+                      new Map((tracksData.items || []).map((track: Track) => [track.id, track])).values()
+                  ) as Track[];
+                  setTrackRecommendations(deduplicatedTracks);
              }
 
              const artistsRes = await fetch(`/api/recommendations?type=artists${tracksQuery}${artistsQuery}`);
@@ -97,11 +206,11 @@ export default function RecommendationsPage() {
              if (artistsRes.ok) {
                  const artistsData = await artistsRes.json();
                  console.log('[PAGE] Artists response:', artistsData);
-                 // Deduplicate artists by ID
-                 const deduplicatedArtists = Array.from(
-                     new Map((artistsData.items || []).map((artist: Artist) => [artist.id, artist])).values()
-                 );
-                 setArtistRecommendations(deduplicatedArtists);
+                  // Deduplicate artists by ID
+                  const deduplicatedArtists = Array.from(
+                      new Map((artistsData.items || []).map((artist: Artist) => [artist.id, artist])).values()
+                  ) as Artist[];
+                  setArtistRecommendations(deduplicatedArtists);
              }
 
             setError(null);
@@ -175,9 +284,9 @@ export default function RecommendationsPage() {
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <div className="text-2xl font-bold mb-4">Loading Recommendations...</div>
-                    <div className="animate-spin">
-                        <ion-icon name="musical-notes" style={{ fontSize: '48px' }}></ion-icon>
-                    </div>
+                      <div className="animate-spin">
+                        <IoMusicalNotes style={{ fontSize: '48px' }} />
+                      </div>
                 </div>
             </div>
         );
@@ -208,9 +317,14 @@ export default function RecommendationsPage() {
                     <h1 className="text-3xl font-bold">Recommended For You</h1>
                     <p className="text-gray-500 mt-2">Discover new music tailored to your taste</p>
                 </div>
-                <Link href="/" className="text-gray-500 hover:text-gray-300 transition">
-                    <ion-icon name="chevron-back" style={{ fontSize: '32px' }}></ion-icon>
-                </Link>
+                <div className="flex gap-3">
+                    <Link href="/saved-recommendations" className="text-yellow-500 hover:text-yellow-600 transition">
+                      <IoBookmark style={{ fontSize: '32px' }} />
+                    </Link>
+                    <button className="p-2 hover:bg-gray-700 rounded transition">
+                      <IoChevronBack style={{ fontSize: '32px' }} />
+                    </button>
+                </div>
             </div>
 
             {/* Seed Selector Button */}
@@ -219,8 +333,8 @@ export default function RecommendationsPage() {
                     onClick={() => setShowSeedSelector(!showSeedSelector)}
                     className="px-6 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition font-medium"
                 >
-                    <ion-icon name="settings-outline" style={{ fontSize: '20px', marginRight: '8px' }}></ion-icon>
-                    Customize Seeds
+                    <IoSettingsOutline style={{ fontSize: '20px', marginRight: '8px' }} />
+                    Seed Settings
                 </button>
                 {(selectedTracks.size > 0 || selectedArtists.size > 0) && (
                     <span className="ml-4 text-gray-500">
@@ -298,7 +412,7 @@ export default function RecommendationsPage() {
                                             </p>
                                         </div>
                                         {selectedTracks.has(track.id) && (
-                                            <ion-icon name="checkmark-circle" style={{ fontSize: '20px' }}></ion-icon>
+                                            <IoCheckmarkCircle style={{ fontSize: '20px' }} />
                                         )}
                                     </div>
                                 </button>
@@ -327,7 +441,7 @@ export default function RecommendationsPage() {
                                     />
                                     <p className="font-medium truncate text-sm">{artist.name}</p>
                                     {selectedArtists.has(artist.id) && (
-                                        <ion-icon name="checkmark-circle" style={{ fontSize: '20px', marginTop: '4px' }}></ion-icon>
+                                        <IoCheckmarkCircle style={{ fontSize: '20px', marginTop: '4px' }} />
                                     )}
                                 </button>
                             ))}
@@ -387,8 +501,8 @@ export default function RecommendationsPage() {
                                 onClick={() => setShowSeedSelector(true)}
                                 className="px-6 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition font-medium"
                             >
-                                <ion-icon name="settings-outline" style={{ fontSize: '20px', marginRight: '8px' }}></ion-icon>
-                                Customize Seeds
+                                <IoSettingsOutline style={{ fontSize: '20px', marginRight: '8px' }} />
+                                Recommendations
                             </button>
                         </div>
                     ) : (
@@ -409,9 +523,9 @@ export default function RecommendationsPage() {
                                         title={track.preview_url ? 'Play preview' : 'No preview available'}
                                     >
                                         {playingTrackId === track.id ? (
-                                            <ion-icon name="pause-circle" style={{ fontSize: '32px' }}></ion-icon>
-                                        ) : (
-                                            <ion-icon name="play-circle" style={{ fontSize: '32px' }}></ion-icon>
+                                            <IoPauseCircle style={{ fontSize: '32px' }} />
+                                          ) : (
+                                            <IoPlayCircle style={{ fontSize: '32px' }} />
                                         )}
                                     </button>
                                     <img
@@ -425,6 +539,18 @@ export default function RecommendationsPage() {
                                             {track.artists.map((a) => a.name).join(', ')}
                                         </p>
                                     </div>
+                                    <button
+                                        onClick={() => savedTrackIds.has(track.id) ? deleteRecommendation(track.id, 'track') : saveRecommendation(track, 'track')}
+                                        disabled={savingId === track.id}
+                                        className={`px-4 py-2 text-white text-sm font-medium rounded-full transition flex-shrink-0 ${
+                                            savedTrackIds.has(track.id)
+                                                ? 'bg-blue-500 hover:bg-blue-600'
+                                                : 'bg-gray-600 hover:bg-gray-700'
+                                        } disabled:opacity-50`}
+                                        title={savedTrackIds.has(track.id) ? 'Remove from saved' : 'Save recommendation'}
+                                    >
+                                        {savedTrackIds.has(track.id) ? <IoBookmark style={{ fontSize: '16px' }} /> : <IoBookmarkOutline style={{ fontSize: '16px' }} />}
+                                    </button>
                                     <a
                                         href={`https://open.spotify.com/track/${track.id}`}
                                         target="_blank"
@@ -451,34 +577,50 @@ export default function RecommendationsPage() {
                                 onClick={() => setShowSeedSelector(true)}
                                 className="px-6 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition font-medium"
                             >
-                                <ion-icon name="settings-outline" style={{ fontSize: '20px', marginRight: '8px' }}></ion-icon>
-                                Customize Seeds
+                                <IoSettingsOutline style={{ fontSize: '20px', marginRight: '8px' }} />
+                                Artists
                             </button>
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                             {artistRecommendations.map((artist) => (
-                                <a
+                                <div
                                     key={artist.id}
-                                    href={`https://open.spotify.com/artist/${artist.id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="group text-center cursor-pointer transition"
+                                    className="group text-center cursor-pointer transition flex flex-col items-center gap-2"
                                 >
-                                    <div className="relative mb-4 overflow-hidden rounded-full">
-                                        <img
-                                            src={artist.images?.[0]?.url}
-                                            alt={artist.name}
-                                            className="w-full aspect-square rounded-full object-cover group-hover:opacity-80 transition"
-                                        />
-                                    </div>
-                                    <p className="font-medium truncate group-hover:text-green-500 transition">{artist.name}</p>
-                                    {artist.genres.length > 0 && (
-                                        <p className="text-xs text-gray-500 truncate mt-1">
-                                            {artist.genres.slice(0, 2).join(', ')}
-                                        </p>
-                                    )}
-                                </a>
+                                    <a
+                                        href={`https://open.spotify.com/artist/${artist.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full"
+                                    >
+                                        <div className="relative mb-4 overflow-hidden rounded-full">
+                                            <img
+                                                src={artist.images?.[0]?.url}
+                                                alt={artist.name}
+                                                className="w-full aspect-square rounded-full object-cover group-hover:opacity-80 transition"
+                                            />
+                                        </div>
+                                        <p className="font-medium truncate group-hover:text-green-500 transition">{artist.name}</p>
+                                        {artist.genres.length > 0 && (
+                                            <p className="text-xs text-gray-500 truncate mt-1">
+                                                {artist.genres.slice(0, 2).join(', ')}
+                                            </p>
+                                        )}
+                                    </a>
+                                    <button
+                                        onClick={() => savedArtistIds.has(artist.id) ? deleteRecommendation(artist.id, 'artist') : saveRecommendation(artist, 'artist')}
+                                        disabled={savingId === artist.id}
+                                        className={`px-3 py-1 text-white text-xs font-medium rounded-full transition ${
+                                            savedArtistIds.has(artist.id)
+                                                ? 'bg-blue-500 hover:bg-blue-600'
+                                                : 'bg-gray-600 hover:bg-gray-700'
+                                        } disabled:opacity-50`}
+                                        title={savedArtistIds.has(artist.id) ? 'Remove from saved' : 'Save recommendation'}
+                                    >
+                                        {savedArtistIds.has(artist.id) ? <IoBookmark style={{ fontSize: '14px' }} /> : <IoBookmarkOutline style={{ fontSize: '14px' }} />}
+                                    </button>
+                                </div>
                             ))}
                         </div>
                     )}

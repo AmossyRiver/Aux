@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { IoMusicalNotes, IoChevronBack, IoRefresh, IoPlayCircle, IoPauseCircle } from 'react-icons/io5';
+import { SiSpotify } from 'react-icons/si';
 
 interface FeedItem {
   id: number;
@@ -380,12 +382,13 @@ export default function FriendsFeedPage() {
     };
 
   if (loading) {
+
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900">
         <div className="text-white text-center">
           <div className="text-2xl font-bold mb-4">Loading Friends Feed...</div>
           <div className="animate-spin">
-            <ion-icon name="musical-notes" style={{ fontSize: '48px' }}></ion-icon>
+            <IoMusicalNotes style={{ fontSize: '48px' }} />
           </div>
         </div>
       </div>
@@ -413,7 +416,7 @@ export default function FriendsFeedPage() {
        <div className="flex items-center justify-center min-h-screen bg-gray-900">
          <div className="text-white text-center">
            <div className="text-2xl font-bold mb-4">No Listening History Yet</div>
-           <div className="text-gray-300 mb-8">Check back later for friends' listening activity</div>
+           <div className="text-gray-300 mb-8">Check back later for friends&#39; listening activity</div>
            <Link href="/" className="px-6 py-3 bg-green-500 text-black font-bold rounded-full hover:bg-green-400">
              Back to Home
            </Link>
@@ -440,7 +443,7 @@ export default function FriendsFeedPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <Link href="/" className="text-white hover:text-gray-300 transition">
-          <ion-icon name="chevron-back" style={{ fontSize: '28px' }}></ion-icon>
+          <IoChevronBack style={{ fontSize: '28px' }} />
         </Link>
         <h1 className="text-xl md:text-2xl font-bold text-white">Friends Feed</h1>
         <div className="relative">
@@ -454,11 +457,10 @@ export default function FriendsFeedPage() {
             }`}
             title="Refresh feed"
           >
-            <ion-icon 
-              name="refresh" 
+            <IoRefresh
               style={{ fontSize: '28px' }}
               className={isRefreshing ? 'animate-spin' : ''}
-            ></ion-icon>
+            />
           </button>
 
           {/* Refresh Alert */}
@@ -477,12 +479,12 @@ export default function FriendsFeedPage() {
          }`}
        >
          {/* Now Playing Badge */}
-         {currentItem.isNowPlaying && (
-           <div className="mb-2 px-4 py-2 bg-green-500 text-black font-bold rounded-full flex items-center gap-2 text-sm md:text-base animate-pulse">
-             <ion-icon name="play-circle" style={{ fontSize: '16px' }}></ion-icon>
-             NOW PLAYING
-           </div>
-         )}
+           {currentItem.isNowPlaying && (
+             <div className="mb-2 px-4 py-2 bg-green-500 text-black font-bold rounded-full flex items-center gap-2 text-sm md:text-base animate-pulse">
+               <IoPlayCircle style={{ fontSize: '16px' }} />
+               NOW PLAYING
+             </div>
+           )}
 
          {/* Album Art with fade */}
          <div className="relative">
@@ -493,11 +495,11 @@ export default function FriendsFeedPage() {
                  alt={currentItem.trackName}
                  className="w-full h-full object-cover"
                />
-             ) : (
-               <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                 <ion-icon name="musical-notes" style={{ fontSize: '60px', color: '#9CA3AF' }}></ion-icon>
-               </div>
-             )}
+               ) : (
+                 <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                   <IoMusicalNotes style={{ fontSize: '60px', color: '#9CA3AF' }} />
+                 </div>
+               )}
            </div>
          </div>
 
@@ -549,24 +551,21 @@ export default function FriendsFeedPage() {
                : 'bg-purple-500 text-white hover:bg-purple-400'
            }`}
            title="Play preview"
-         >
-           <ion-icon 
-             name={isPlayingPreview ? 'pause' : 'play'} 
-             style={{ fontSize: '18px' }}
-           ></ion-icon>
-           {previewLoading ? 'Loading...' : isPlayingPreview ? 'Pause Preview' : 'Play Preview'}
-         </button>
+          >
+            {isPlayingPreview ? <IoPauseCircle style={{ fontSize: '18px' }} /> : <IoPlayCircle style={{ fontSize: '18px' }} />}
+            {previewLoading ? 'Loading...' : isPlayingPreview ? 'Pause Preview' : 'Play Preview'}
+          </button>
 
          {/* Listen on Spotify Button */}
          <a
            href={spotifyUrl}
-           target="_blank"
-           rel="noopener noreferrer"
-           className="px-4 md:px-6 py-2 md:py-3 bg-green-500 text-black font-bold rounded-full hover:bg-green-400 transition flex items-center gap-2 text-sm md:text-base"
-         >
-           <ion-icon name="logo-spotify" style={{ fontSize: '18px' }}></ion-icon>
-           Listen on Spotify
-         </a>
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 md:px-6 py-2 md:py-3 bg-green-500 text-black font-bold rounded-full hover:bg-green-400 transition flex items-center gap-2 text-sm md:text-base"
+          >
+            <SiSpotify style={{ fontSize: '18px' }} />
+            Listen on Spotify
+          </a>
 
         {/* Song Counter */}
         <div className="text-center mt-2 md:mt-4">

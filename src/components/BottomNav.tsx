@@ -2,15 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { IoHome, IoSparkles, IoMusicalNotes, IoPeople } from 'react-icons/io5';
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/', icon: 'home', label: 'Home' },
-    { href: '/recommendations', icon: 'sparkles', label: 'Discover' },
-    { href: '/friends-feed', icon: 'musical-notes', label: 'Feed' },
-    { href: '/users', icon: 'people', label: 'Users' },
+    { href: '/', icon: IoHome, label: 'Home' },
+    { href: '/recommendations', icon: IoSparkles, label: 'Discover' },
+    { href: '/friends-feed', icon: IoMusicalNotes, label: 'Feed' },
+    { href: '/users', icon: IoPeople, label: 'Users' },
   ];
 
   return (
@@ -20,6 +21,7 @@ export default function BottomNav() {
         <div className="flex justify-around items-center h-16">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
+            const IconComponent = item.icon;
             return (
               <Link
                 key={item.href}
@@ -30,7 +32,7 @@ export default function BottomNav() {
                     : 'text-gray-400 hover:text-gray-200'
                 }`}
               >
-                <ion-icon name={item.icon} style={{ fontSize: '24px' }}></ion-icon>
+                <IconComponent style={{ fontSize: '24px' }} />
                 <span className="text-xs font-medium">{item.label}</span>
               </Link>
             );

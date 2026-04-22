@@ -91,13 +91,8 @@ export async function GET(request: NextRequest) {
         // Fetch recently played tracks to keep listening history fresh
         // Fetch in larger batches to get more comprehensive history
         try {
-            const recentlyPlayedBatches = await Promise.all([
-                client.me.recentlyPlayed({ limit: 50, offset: 0 }),
-                client.me.recentlyPlayed({ limit: 50, offset: 50 }),
-                client.me.recentlyPlayed({ limit: 50, offset: 100 })
-            ]);
-
-            const allRecentlyPlayed = recentlyPlayedBatches.flatMap(batch => batch.items || []);
+            const recentlyPlayed = await client.me.recentlyPlayed({ limit: 50 });
+            const allRecentlyPlayed = recentlyPlayed.items || [];
 
             for (const item of allRecentlyPlayed) {
                 const track = item.track;

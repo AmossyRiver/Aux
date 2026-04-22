@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { IoPlayCircle, IoPauseCircle } from 'react-icons/io5';
 
 interface SpotifyUser {
   display_name: string;
@@ -215,6 +216,12 @@ export default function Home() {
               Discover
             </Link>
             <Link
+              href="/saved-recommendations"
+              className="px-4 py-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 transition"
+            >
+              Saved
+            </Link>
+            <Link
               href="/friends-feed"
               className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
             >
@@ -283,9 +290,9 @@ export default function Home() {
                           className="w-10 h-10 flex items-center justify-center rounded-full bg-green-500 hover:bg-green-600 text-white flex-shrink-0"
                       >
                         {playingTrackId === track.id ? (
-                          <ion-icon name="pause-circle" style={{ fontSize: '28px' }}></ion-icon>
+                          <IoPauseCircle style={{ fontSize: '28px' }} />
                         ) : (
-                          <ion-icon name="play-circle" style={{ fontSize: '28px' }}></ion-icon>
+                          <IoPlayCircle style={{ fontSize: '28px' }} />
                         )}
                       </button>
                       <span className="w-6 text-gray-500">{i + 1}</span>
@@ -293,10 +300,6 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{track.name}</p>
                         <p className="text-sm text-gray-500 truncate">{track.artists.map(a => a.name).join(', ')}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-semibold text-green-600">{track.streamsCount || 0} streams</p>
-                        <p className="text-xs text-gray-400">{track.minutesListened || 0} min</p>
                       </div>
                     </li>
                 ))}
@@ -322,11 +325,11 @@ export default function Home() {
                       onClick={() => playPreview(track)}
                       className="w-10 h-10 flex items-center justify-center rounded-full bg-green-500 hover:bg-green-600 text-white flex-shrink-0"
                   >
-                    {playingTrackId === track.id ? (
-                      <ion-icon name="pause-circle" style={{ fontSize: '28px' }}></ion-icon>
-                    ) : (
-                      <ion-icon name="play-circle" style={{ fontSize: '28px' }}></ion-icon>
-                    )}
+                   {playingTrackId === track.id ? (
+                       <IoPauseCircle style={{ fontSize: '28px' }} />
+                     ) : (
+                       <IoPlayCircle style={{ fontSize: '28px' }} />
+                     )}
                   </button>
                   <img src={track.album.images?.[0]?.url} alt="" className="w-10 h-10 rounded" />
                   <div className="flex-1">

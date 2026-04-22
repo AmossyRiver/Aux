@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { IoPlayCircle, IoPauseCircle } from 'react-icons/io5';
 
 interface Track {
   id: string;
@@ -38,17 +39,17 @@ export default function ListeningHistoryPage() {
        setLoading(true);
        // Fetch directly from the database endpoint
        const res = await fetch('/api/listening-history');
-       if (res.ok) {
-         const data = await res.json();
-         // Deduplicate on frontend to ensure no duplicates are shown
-         const items = data.items || [];
-         const deduped = Array.from(
-           new Map(items.map((item: ListeningHistoryTrack) => [item.id, item])).values()
-         );
-         setListeningHistory(deduped);
-       } else {
-         console.error('Failed to fetch listening history:', res.status);
-       }
+        if (res.ok) {
+          const data = await res.json();
+          // Deduplicate on frontend to ensure no duplicates are shown
+          const items = data.items || [];
+          const deduped = Array.from(
+            new Map(items.map((item: ListeningHistoryTrack) => [item.id, item])).values()
+          ) as ListeningHistoryTrack[];
+          setListeningHistory(deduped);
+        } else {
+          console.error('Failed to fetch listening history:', res.status);
+        }
      } catch (error) {
        console.error('Error fetching listening history:', error);
      } finally {
@@ -118,11 +119,11 @@ export default function ListeningHistoryPage() {
                 onClick={() => playPreview(track)}
                 className="w-10 h-10 flex items-center justify-center rounded-full bg-green-500 hover:bg-green-600 text-white flex-shrink-0"
               >
-                {playingTrackId === track.id ? (
-                  <ion-icon name="pause-circle" style={{ fontSize: '28px' }}></ion-icon>
-                ) : (
-                  <ion-icon name="play-circle" style={{ fontSize: '28px' }}></ion-icon>
-                )}
+               {playingTrackId === track.id ? (
+                   <IoPauseCircle style={{ fontSize: '28px' }} />
+                 ) : (
+                   <IoPlayCircle style={{ fontSize: '28px' }} />
+                 )}
               </button>
               <img src={track.album.images?.[0]?.url} alt="" className="w-10 h-10 rounded" />
               <div className="flex-1">

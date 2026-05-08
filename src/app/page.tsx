@@ -185,7 +185,7 @@ export default function Home() {
   if (!user) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-          <h1 className="text-3xl font-bold">Spotify Dashboard</h1>
+          <h1 className="text-3xl font-bold">Aux</h1>
           <a
               href="/api/login"
               className="px-6 py-3 bg-green-500 text-white rounded-full hover:bg-green-600"

@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ['latin'] });
 initializeCronJobs();
 
 export const metadata: Metadata = {
-    title: 'Spotify Dashboard',
-    description: 'Your personal Spotify statistics',
+    title: 'Aux - Streaming Companion App',
+    description: 'Your personal Spotify statistics and Discovery App',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
